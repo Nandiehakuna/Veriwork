@@ -98,7 +98,7 @@ export default function ReputationSection() {
     draw()
   }
 
-  const statBox = (label: string, ref: React.RefObject<HTMLDivElement>, init = '0') => (
+  const statBox = (label: string, ref: React.RefObject<HTMLDivElement | null>, init = '0') => (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
       <div ref={ref} className="font-display font-extrabold text-3xl text-lime leading-none">{init}</div>
       <div className="text-xs text-white/40 mt-1 tracking-widest uppercase">{label}</div>

@@ -503,7 +503,7 @@ const profile = profileRaw as WorkerProfile | undefined
                 <div className="text-center py-12">
                   <div className="font-body text-veri-gray">Loading available tasks...</div>
                 </div>
-              ) : !availableTasks || availableTasks.length === 0 ? (
+              ) : !availableTasks || (Array.isArray(availableTasks) && availableTasks.length === 0) ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-3">📋</div>
                   <div className="font-body text-veri-gray">No available tasks</div>
@@ -511,7 +511,7 @@ const profile = profileRaw as WorkerProfile | undefined
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {availableTasks.map((task: any, index) => (
+                  {(Array.isArray(availableTasks) ? availableTasks : []).map((task: any, index: number) => (
                     <div key={index} className="bg-white rounded-2xl p-6 border border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <span className="text-[11px] font-semibold tracking-wider uppercase px-3 py-1 rounded-full bg-lime/10 text-lime-dark">
@@ -550,7 +550,7 @@ const profile = profileRaw as WorkerProfile | undefined
                 <div className="text-center py-12">
                   <div className="font-body text-veri-gray">Loading active tasks...</div>
                 </div>
-              ) : !activeTasks || activeTasks.length === 0 ? (
+              ) : !activeTasks || (Array.isArray(activeTasks) && activeTasks.length === 0) ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-3">📋</div>
                   <div className="font-body text-veri-gray">No active tasks</div>
@@ -558,7 +558,7 @@ const profile = profileRaw as WorkerProfile | undefined
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {activeTasks.map((task: any, index) => (
+                  {(Array.isArray(activeTasks) ? activeTasks : []).map((task: any, index: number) => (
                     <div key={index} className="bg-white rounded-2xl p-6 border border-gray-100">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
@@ -601,7 +601,7 @@ const profile = profileRaw as WorkerProfile | undefined
                 <div className="text-center py-12">
                   <div className="font-body text-veri-gray">Loading completed tasks...</div>
                 </div>
-              ) : !completedTaskIds || completedTaskIds.length === 0 ? (
+              ) : !completedTaskIds || (Array.isArray(completedTaskIds) && completedTaskIds.length === 0) ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-3">🔗</div>
                   <div className="font-body text-veri-gray">No completed tasks</div>
@@ -609,7 +609,7 @@ const profile = profileRaw as WorkerProfile | undefined
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {completedTaskIds.slice(0, 10).map((taskId: bigint, index) => (
+                  {(Array.isArray(completedTaskIds) ? completedTaskIds : []).slice(0, 10).map((taskId: bigint, index: number) => (
                     <div key={index} className="bg-white rounded-2xl p-6 border border-gray-100">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -755,7 +755,7 @@ const profile = profileRaw as WorkerProfile | undefined
       </main>
       
       {/* Task Modal */}
-      {activeTask && <TaskModal task={activeTask} onClose={closeTaskModal} />}
+      {activeTask && <TaskModal task={activeTask} />}
     </div>
   )
 }

@@ -257,7 +257,7 @@ useEffect(() => {
       functionName: 'approveSubmission',
       args: [BigInt(submission.taskId), submission.worker as `0x${string}`],
     } as any)
-    setSubmissions(prev => prev.filter(s => s.id !== submission.id))
+    setSubmissions((prev: any) => prev.filter((s: any) => s.id !== submission.id))
     showToast('Submission approved! USDC released.')
   }
 
@@ -272,7 +272,7 @@ useEffect(() => {
       functionName: 'rejectSubmission',
       args: [BigInt(submission.taskId), submission.worker as `0x${string}`],
     } as any)
-    setSubmissions(prev => prev.filter(s => s.id !== submission.id))
+    setSubmissions((prev: any) => prev.filter((s: any) => s.id !== submission.id))
     showToast('Submission rejected.')
   }
 
@@ -326,19 +326,19 @@ useEffect(() => {
  if (!authChecked) return null
 if (!isConnected) return null
 
-  const balanceFormatted = escrowBalance ? formatUnits(escrowBalance, 6) : '0'
+  const balanceFormatted = escrowBalance ? formatUnits(escrowBalance as bigint, 6) : '0'
 
-  const orgTasks = orgTasksRaw ? orgTasksRaw.map((task: any) => ({
+  const orgTasks = orgTasksRaw && Array.isArray(orgTasksRaw) ? orgTasksRaw.map((task: any) => ({
     id: task.id.toString(),
     title: task.title,
     category: ['design', 'code', 'translation', 'data'][task.category] as TaskCategory,
-    reward: formatUnits(task.reward, 6),
+    reward: formatUnits(task.reward as bigint, 6),
     deadline: `${Math.ceil((Number(task.deadline) - Date.now() / 1000) / 3600)}hr`,
     status: ['open', 'in_progress', 'under_review', 'completed', 'cancelled'][task.status] as PostedTask['status'],
     postedAt: new Date(Number(task.postedAt) * 1000).toLocaleDateString(),
   })) : []
 
-  const pendingSubmissions = orgTasksRaw ? orgTasksRaw.filter((task: any) => task.status === 2).map((task: any) => ({
+  const pendingSubmissions = orgTasksRaw && Array.isArray(orgTasksRaw) ? orgTasksRaw.filter((task: any) => task.status === 2).map((task: any) => ({
     id: task.id.toString(),
     worker: task.worker,
     taskId: BigInt(task.id),
