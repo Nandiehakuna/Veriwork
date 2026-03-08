@@ -8,8 +8,9 @@ import { AuthType } from '@particle-network/auth-core'
 import { avalanche } from 'wagmi/chains'
 
 export function ParticleProvider({ children }: { children: ReactNode }) {
-  if(typeof window === 'undefined')
-  return 
+    if (typeof window === 'undefined') return <>{children}</>
+
+  return (
     <AuthCoreContextProvider
       options={{
         projectId: process.env.NEXT_PUBLIC_PARTICLE_PROJECT_ID!,
@@ -27,5 +28,5 @@ export function ParticleProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </AuthCoreContextProvider>
-  
+  )
 }
