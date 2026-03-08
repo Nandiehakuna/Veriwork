@@ -3,12 +3,16 @@
 import { ReactNode } from 'react'
 import { AuthCoreContextProvider } from '@particle-network/authkit'
 import { AuthType } from '@particle-network/auth-core'
-
-
 import { avalanche } from 'wagmi/chains'
 
 export function ParticleProvider({ children }: { children: ReactNode }) {
-    if (typeof window === 'undefined') return <>{children}</>
+  // Only render on client side
+  if (typeof window === 'undefined') return <>{children}</>
+  
+  // Additional check to ensure browser APIs are available
+  if (typeof indexedDB === 'undefined' || typeof localStorage === 'undefined') {
+    return <>{children}</>
+  }
 
   return (
     <AuthCoreContextProvider

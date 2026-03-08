@@ -3,7 +3,7 @@ import webpack from 'webpack'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  webpack(config, { webpack }) {
+  webpack(config, { webpack, isServer }) {
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(
         /^node:/,
@@ -12,17 +12,38 @@ const nextConfig: NextConfig = {
         }
       )
     )
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-      http2: false,
-      crypto: false,
-      os: false,
-      path: false,
-      stream: false,
+    
+    // Add polyfills for browser APIs that Particle Network needs
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        http2: false,
+        crypto: false,
+        os: false,
+        path: false,
+        stream: false,
+        // Add browser API polyfills
+        'indexeddb': false,
+        'localStorage': false,
+        'sessionStorage': false,
+      }
+    } else {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        http2: false,
+        crypto: false,
+        os: false,
+        path: false,
+        stream: false,
+      }
     }
+    
     config.resolve.alias = {
       ...config.resolve.alias,
       'porto': false,

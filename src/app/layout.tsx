@@ -3,7 +3,7 @@ import './globals.css'
 
 import { Providers } from '@/components/Provider'
 import Navbar from '@/components/layout/Navbar'
-import WalletModal from '@/components/ui/WalletModal'
+import ClientWalletModal from '@/components/ui/ClientWalletModal'
 import Toast from '@/components/ui/Toast'
 import Cursor from '@/components/ui/Cursor'
 
@@ -29,7 +29,7 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           {children}
-          <WalletModal />
+          <ClientWalletModal />
           <Toast />
           <Cursor />
         </Providers>
