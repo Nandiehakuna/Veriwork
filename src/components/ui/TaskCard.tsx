@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils'
 
 interface TaskCardProps {
   task: Task
+  onClaimClick?: () => void
 }
 
-export default function TaskCard({ task }: TaskCardProps) {
+export default function TaskCard({ task, onClaimClick }: TaskCardProps) {
   const { openTaskModal } = useApp()
   const catStyle = CATEGORY_STYLES[task.category]
 
@@ -55,7 +56,7 @@ export default function TaskCard({ task }: TaskCardProps) {
 
         {/* Claim button */}
         <button
-          onClick={() => openTaskModal(task)}
+          onClick={onClaimClick || (() => openTaskModal(task))}
           className="w-full rounded-full py-3 text-sm font-medium bg-veri-black text-white hover:bg-lime hover:text-veri-black transition-all cursor-none"
         >
           Claim Task →

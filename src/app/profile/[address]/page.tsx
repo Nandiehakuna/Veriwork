@@ -60,10 +60,11 @@ export default function ProfilePage() {
   const { address: connectedAddress } = useAccount()
   const address = params.address as string
   const isOwnProfile = connectedAddress?.toLowerCase() === address?.toLowerCase()
-  const { openTaskModal, activeTask, closeTaskModal,showToast } = useApp()
+  const { showToast } = useApp()
   const [activeTab, setActiveTab] = useState('overview')
   const [copied, setCopied] = useState(false)
   const [animated, setAnimated] = useState(false)
+  const [claimingTaskId, setClaimingTaskId] = useState<string | null>(null)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ringRef = useRef<SVGCircleElement>(null)
@@ -140,6 +141,7 @@ const profile = profileRaw as WorkerProfile | undefined
       showToast('Task claimed successfully!')
       refetchAvailableTasks()
       refetchActiveTasks()
+      setClaimingTaskId(null)
     }
   }, [claimSuccess, showToast, refetchAvailableTasks, refetchActiveTasks])
 
@@ -288,13 +290,18 @@ const profile = profileRaw as WorkerProfile | undefined
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleClaim = (taskId: bigint) => {
+  const handleClaim = (taskId: string) => {
+    setClaimingTaskId(taskId)
     claimTaskContract({
       address: VERIWORK_ADDRESS,
       abi: VERIWORK_ABI,
       functionName: 'claimTask',
       args: [BigInt(taskId)],
     })
+  }
+
+  const handleSubmitWork = () => {
+    showToast('Work submitted! Waiting for org approval.')
   }
 
   const truncated = address
@@ -530,10 +537,10 @@ const profile = profileRaw as WorkerProfile | undefined
                         </div>
                         <button
                           onClick={() => handleClaim(task.id)}
-                          disabled={claimPending}
+                          disabled={claimingTaskId === task.id.toString()}
                           className="bg-veri-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-lime hover:text-veri-black transition-all disabled:opacity-50 cursor-none"
                         >
-                          {claimPending ? 'Claiming...' : 'Claim →'}
+                          {claimingTaskId === task.id.toString() ? 'Claiming...' : 'Claim →'}
                         </button>
                       </div>
                     </div>
@@ -573,7 +580,7 @@ const profile = profileRaw as WorkerProfile | undefined
                           </div>
                         </div>
                         <button
-                          onClick={() => openTaskModal(task)}
+                          onClick={handleSubmitWork}
                           className="bg-lime text-veri-black px-4 py-2 rounded-full text-sm font-medium hover:bg-lime-dark transition-all cursor-none"
                         >
                           Submit Work
@@ -753,9 +760,6 @@ const profile = profileRaw as WorkerProfile | undefined
 
         </div>
       </main>
-      
-      {/* Task Modal */}
-      {activeTask && <TaskModal task={activeTask} />}
     </div>
   )
 }

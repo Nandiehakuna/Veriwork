@@ -4,10 +4,13 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useReadContract } from 'wagmi'
+import { useRouter } from 'next/navigation'
+import { useAccount } from 'wagmi'
 import { VERIWORK_ADDRESS, VERIWORK_ABI } from '@/lib/contracts'
 import { FilterType, Task, TaskCategory } from '@/types'
 import TaskCard from '@/components/ui/TaskCard'
 import { cn } from '@/lib/utils'
+import { useApp } from '@/lib/store'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -55,8 +58,6 @@ function formatPostedAt(postedAtSeconds: bigint): string {
   return `${days}d ago`
 }
 
-
-
 function mapContractTaskToTask(raw: any): Task {
   const id = raw.id ?? raw[0]
   const org = raw.org ?? raw[1]
@@ -86,6 +87,9 @@ function mapContractTaskToTask(raw: any): Task {
 export default function TaskFeedSection() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const gridRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const { address, isConnected } = useAccount()
+  const { openWalletModal } = useApp()
 
   const { data: openTasksRaw, isLoading } = useReadContract({
     address: VERIWORK_ADDRESS as `0x${string}`,
@@ -93,15 +97,23 @@ export default function TaskFeedSection() {
     functionName: 'getOpenTasks',
   })
 
- const tasks: Task[] = useMemo(() => {
-  if (!openTasksRaw) return []
-  const arr = Array.isArray(openTasksRaw) ? openTasksRaw : []
-  return arr.map(mapContractTaskToTask)
-}, [openTasksRaw])
+  const tasks: Task[] = useMemo(() => {
+    if (!openTasksRaw) return []
+    const arr = Array.isArray(openTasksRaw) ? openTasksRaw : []
+    return arr.map(mapContractTaskToTask)
+  }, [openTasksRaw])
 
   const filtered = activeFilter === 'all'
     ? tasks
     : tasks.filter(t => t.category === activeFilter)
+
+  const handleClaimClick = (taskId: string) => {
+    if (!isConnected || !address) {
+      openWalletModal()
+      return
+    }
+    router.push(`/profile/${address}?tab=available`)
+  }
 
   useEffect(() => {
     if (!gridRef.current) return
@@ -163,7 +175,7 @@ export default function TaskFeedSection() {
         ) : (
           filtered.map(task => (
             <div key={task.id} data-task-card>
-              <TaskCard task={task} />
+              <TaskCard task={task} onClaimClick={() => handleClaimClick(task.id)} />
             </div>
           ))
         )}

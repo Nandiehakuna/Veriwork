@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { useApp } from '@/lib/store'
 
 const NAV_LINKS = [
-  { label: 'Tasks', href: '#tasks' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Reputation', href: '#reputation' },
+  { label: 'Tasks', href: '/#tasks' },
+  { label: 'How It Works', href: '/#how-it-works' },
+  { label: 'Reputation', href: '/#reputation' },
   { label: 'For Orgs', href: '/org' },
 ]
 
@@ -15,9 +15,11 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-xl border-b border-veri-border h-16 flex items-center justify-between px-8">
-      <div className="font-display font-extrabold text-xl tracking-tight">
-        Veri<span className="text-lime-dark">Work</span>
-      </div>
+      <Link href="/" className="cursor-none">
+        <div className="font-display font-extrabold text-xl tracking-tight">
+          Veri<span className="text-lime-dark">Work</span>
+        </div>
+      </Link>
 
       <div className="hidden md:flex items-center gap-10">
         {NAV_LINKS.map(({ label, href }) => (
