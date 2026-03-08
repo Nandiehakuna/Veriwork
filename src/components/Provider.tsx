@@ -1,26 +1,33 @@
-// src/components/Providers.tsx
 'use client'
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { config } from '@/lib/wagmi'
-import { ParticleProvider } from '@/lib/particle'
 import { AppProvider } from '@/lib/store'
-import { useState } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  // We initialize the QueryClient inside the client component to ensure
-  // it is only created once per browser session.
+function ParticleWrapper({ children }: { children: ReactNode }) {
+  const [ParticleProvider, setParticleProvider] = useState<React.ComponentType<{ children: ReactNode }> | null>(null)
+
+  useEffect(() => {
+    import('@/lib/particle').then((mod) => {
+      setParticleProvider(() => mod.ParticleProvider)
+    })
+  }, [])
+
+  if (!ParticleProvider) return <>{children}</>
+  return <ParticleProvider>{children}</ParticleProvider>
+}
+
+export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
-
   return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={config}>
-        <ParticleProvider>
+        <ParticleWrapper>
           <AppProvider>
             {children}
           </AppProvider>
-        </ParticleProvider>
+        </ParticleWrapper>
       </WagmiProvider>
     </QueryClientProvider>
   )
