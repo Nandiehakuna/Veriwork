@@ -22,7 +22,7 @@ typechain-types/
 deployments/
 # If using Foundry:
 out/
-lib/
+
 broadcast/
 
 # --- Sensitive Wallet Data ---
