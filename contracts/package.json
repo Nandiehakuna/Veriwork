@@ -1,0 +1,33 @@
+{
+  "name": "contracts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:fuji": "hardhat run scripts/deploy.ts --network fuji",
+    "deploy:avalanche": "hardhat run scripts/deploy.ts --network avalanche",
+    "verify:fuji": "hardhat verify --network fuji",
+    "verify:avalanche": "hardhat verify --network avalanche",
+    "clean": "hardhat clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "VeriWork smart contracts for decentralized task marketplace",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "latest",
+    "@nomicfoundation/hardhat-verify": "latest",
+    "@openzeppelin/contracts": "^5.6.1",
+    "@types/chai": "latest",
+    "@types/mocha": "latest",
+    "@types/node": "^20.10.6",
+    "chai": "latest",
+    "dotenv": "^17.3.1",
+    "ethers": "latest",
+    "hardhat": "^3.1.10",
+    "mocha": "latest",
+    "ts-node": "latest",
+    "typescript": "^5.3.3"
+  }
+}

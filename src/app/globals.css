@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: #ffffff;
+    color: #0B0B0B;
+    font-family: 'Poppins', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: #fff; }
+  ::-webkit-scrollbar-thumb { background: #7EE000; border-radius: 2px; }
+}
+
+@layer components {
+  .font-display {
+    font-family: 'Syne', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .font-light-poppins {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 300;
+  }
+}
+
+@layer utilities {
+  .text-gradient-lime {
+    background: linear-gradient(135deg, #7EE000 0%, #5AB800 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .ring-fill-transition {
+    transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .charge-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #7EE000;
+    width: var(--charge, 0%);
+    transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+  }
+}
