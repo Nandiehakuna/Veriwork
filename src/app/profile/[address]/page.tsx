@@ -80,7 +80,7 @@ export default function ProfilePage() {
   const scoreRef = useRef<HTMLDivElement>(null)
 
   // Worker profile data
-const { data: profileRaw, isLoading: profileLoading } = useReadContract({
+const { data: profileRaw, isLoading: profileLoading, refetch: refetchProfile } = useReadContract({
   address: VERIWORK_ADDRESS,
   abi: VERIWORK_ABI,
   functionName: 'getWorkerProfile',
@@ -137,6 +137,9 @@ const profile = profileRaw as WorkerProfile | undefined
   // Disconnect hook
   const { disconnect } = useDisconnect()
   const router = useRouter()
+
+  // Profile refresh trigger
+  const [profileRefresh, setProfileRefresh] = useState(0)
 
   // Log claim status changes
   useEffect(() => {
@@ -222,6 +225,7 @@ const profile = profileRaw as WorkerProfile | undefined
       case 'completed-tasks': return 'Completed Tasks'
       case 'earnings': return 'Earnings'
       case 'reputation': return 'Reputation'
+      case 'offramp': return 'Cash Out'
       default: return 'Overview'
     }
   }
@@ -262,6 +266,11 @@ const profile = profileRaw as WorkerProfile | undefined
     { id: 'reputation', label: 'Reputation', icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <polygon points="8,2 10,6 14,6 11,9 12,13 8,11 4,13 5,9 2,6 6,6" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+      </svg>
+    )},
+    { id: 'offramp', label: 'Cash Out', icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M4 6h8M4 10h6M10 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     )},
   ]
@@ -423,86 +432,100 @@ const profile = profileRaw as WorkerProfile | undefined
     )
   }
 
-  if (!isOwnProfile) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="font-body text-veri-gray">This is your personal dashboard. Access your profile from the Navbar.</div>
-      </div>
-    )
-  }
+  // Allow viewing any profile, but sidebar only shows for own profile
+  const showSidebar = isOwnProfile
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       
-      {/* LEFT SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col fixed left-0 top-16 bottom-0 z-50">
-        
-        {/* Worker identity */}
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-veri-black flex items-center justify-center flex-shrink-0">
-              <span className="font-display font-bold text-lime text-lg">
-                {address?.slice(2,4).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <div className="font-body font-semibold text-sm">
-                {address?.slice(0,6)}...{address?.slice(-4)}
-              </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-lime" />
-                <span className="font-light-poppins text-xs text-veri-gray">
-                  Avalanche Fuji
+      {/* LEFT SIDEBAR - Only show for own profile */}
+      {showSidebar && (
+        <aside className="w-64 bg-white border-r border-gray-100 flex flex-col fixed left-0 top-16 bottom-0 z-50">
+          
+          {/* Worker identity */}
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-veri-black flex items-center justify-center flex-shrink-0">
+                <span className="font-display font-bold text-lime text-lg">
+                  {address?.slice(2,4).toUpperCase()}
                 </span>
               </div>
+              <div>
+                <div className="font-body font-semibold text-sm">
+                  {address?.slice(0,6)}...{address?.slice(-4)}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-lime" />
+                  <span className="font-light-poppins text-xs text-veri-gray">
+                    Avalanche Fuji
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* POC Score pill */}
+            <div className="mt-4 bg-veri-black rounded-xl p-3 flex items-center justify-between">
+              <span className="font-light-poppins text-xs text-white/50">
+                POC Score
+              </span>
+              <span className="font-display font-bold text-lime text-lg">
+                {stats.pocScore}
+              </span>
             </div>
           </div>
-          
-          {/* POC Score pill */}
-          <div className="mt-4 bg-veri-black rounded-xl p-3 flex items-center justify-between">
-            <span className="font-light-poppins text-xs text-white/50">
-              POC Score
-            </span>
-            <span className="font-display font-bold text-lime text-lg">
-              {stats.pocScore}
-            </span>
-          </div>
-        </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-none',
-                activeTab === item.id
-                  ? 'bg-veri-black text-white'
-                  : 'text-veri-gray hover:bg-gray-50 hover:text-veri-black'
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Skills at bottom of sidebar */}
-        <div className="p-4 border-t border-gray-100">
-          <div className="font-light-poppins text-xs text-veri-gray mb-2">Top Skills</div>
-          <div className="flex flex-wrap gap-1.5">
-            {topSkills.map((skill: string) => (
-              <span key={skill} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-lime/10 text-lime-dark">
-                {skill}
-              </span>
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-1">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-none',
+                  activeTab === item.id
+                    ? 'bg-veri-black text-white'
+                    : 'text-veri-gray hover:bg-gray-50 hover:text-veri-black'
+                )}
+              >
+                {item.icon}
+                {item.label}
+              </button>
             ))}
+          </nav>
+
+          {/* Skills at bottom of sidebar */}
+          <div className="p-4 border-t border-gray-100">
+            <div className="font-light-poppins text-xs text-veri-gray mb-2">Top Skills</div>
+            <div className="flex flex-wrap gap-1.5">
+              {topSkills.map((skill: string) => (
+                <span key={skill} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-lime/10 text-lime-dark">
+                  {skill}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      </aside>
+
+          {/* Disconnect button */}
+          <div className="p-4 border-t border-gray-100">
+            <button
+              onClick={() => {
+                disconnect()
+                router.push('/')
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-veri-gray hover:bg-red-50 hover:text-red-500 transition-all cursor-none"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 8H3M6 5l-3 3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="9" y="3" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              </svg>
+              Disconnect
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 ml-64 pt-16">
+      <main className={`flex-1 pt-16 ${showSidebar ? 'ml-64' : ''}`}>
         
         {/* Top bar */}
         <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
@@ -541,6 +564,31 @@ const profile = profileRaw as WorkerProfile | undefined
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-4">
+                {!isOwnProfile ? (
+                  <button
+                    onClick={handleEndorse}
+                    disabled={endorsePending}
+                    className="bg-lime text-veri-black px-6 py-3 rounded-full font-body font-medium hover:bg-lime-dark transition-all disabled:opacity-50 cursor-none"
+                  >
+                    {endorsePending ? 'Endorsing...' : '+ Endorse This Worker'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/profile/${address}`
+                      )
+                      showToast('Profile link copied!')
+                    }}
+                    className="border border-veri-border text-veri-gray px-6 py-3 rounded-full font-body font-medium hover:border-veri-black hover:text-veri-black transition-all cursor-none"
+                  >
+                    Share Profile
+                  </button>
+                )}
               </div>
 
               {/* POC Ring + Constellation side by side */}
@@ -642,16 +690,22 @@ const profile = profileRaw as WorkerProfile | undefined
                         <div className="font-display font-bold text-lime text-lg">
                           ${(Number(task.reward) / 1_000_000).toFixed(2)}
                         </div>
-                        <button
-                          onClick={() => {
-                            console.log('Claim button clicked, task.id:', task.id)
-                            handleClaim(task.id)
-                          }}
-                          disabled={claimingTaskId === task.id.toString()}
-                          className="bg-veri-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-lime hover:text-veri-black transition-all disabled:opacity-50 cursor-none"
-                        >
-                          {claimingTaskId === task.id.toString() ? 'Claiming...' : 'Claim →'}
-                        </button>
+                        {!isOwnProfile ? (
+                          <div className="text-sm text-veri-gray font-medium">
+                            Connect the wallet for this profile to claim tasks
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              console.log('Claim button clicked, task.id:', task.id)
+                              handleClaim(task.id)
+                            }}
+                            disabled={claimingTaskId === task.id.toString()}
+                            className="bg-veri-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-lime hover:text-veri-black transition-all disabled:opacity-50 cursor-none"
+                          >
+                            {claimingTaskId === task.id.toString() ? 'Claiming...' : 'Claim →'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -872,7 +926,85 @@ const profile = profileRaw as WorkerProfile | undefined
             </div>
           )}
 
-        </div>
+          {/* OFFRAMP TAB */}
+          {activeTab === 'offramp' && (
+            <div className="max-w-2xl">
+              <section className="bg-white rounded-3xl p-8 shadow-sm border-t-4 border-lime">
+                
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="bg-lime/20 text-lime-dark text-xs font-semibold px-3 py-1 rounded-full">
+                    Coming in V2
+                  </span>
+                </div>
+
+                <h2 className="font-display font-bold text-2xl mb-3">
+                  Cash Out Your USDC
+                </h2>
+                <p className="font-light-poppins text-veri-gray mb-8">
+                  Convert your earned USDC directly to local currency and receive it via mobile money, bank transfer, or cash — no crypto exchange needed.
+                </p>
+
+                <div className="grid grid-cols-1 gap-4 mb-8">
+                  {[
+                    { 
+                      icon: '📱', 
+                      title: 'Mobile Money', 
+                      desc: 'M-Pesa, MTN, Airtel Money' 
+                    },
+                    { 
+                      icon: '🏦', 
+                      title: 'Bank Transfer', 
+                      desc: 'Direct to your local bank account' 
+                    },
+                    { 
+                      icon: '💵', 
+                      title: 'Cash Pickup', 
+                      desc: 'Collect cash at local agent points' 
+                    },
+                  ].map(item => (
+                    <div key={item.title} className="flex items-center gap-4 p-4 border border-veri-border rounded-2xl opacity-60">
+                      <span className="text-2xl">{item.icon}</span>
+                      <div>
+                        <div className="font-body font-semibold text-sm">
+                          {item.title}
+                        </div>
+                        <div className="font-light-poppins text-xs text-veri-gray">
+                          {item.desc}
+                        </div>
+                      </div>
+                      <span className="ml-auto text-xs font-semibold text-veri-gray bg-gray-100 px-2 py-1 rounded-full">
+                        Soon
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-veri-light rounded-2xl p-6">
+                  <div className="font-body font-semibold mb-2">
+                    Get notified when Cash Out launches
+                  </div>
+                  <div className="flex gap-3">
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      className="flex-1 border-[1.5px] border-veri-border rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:border-lime"
+                    />
+                    <button
+                      onClick={() => showToast(
+                        'You will be notified when Cash Out launches!'
+                      )}
+                      className="bg-veri-black text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-lime hover:text-veri-black transition-all cursor-none"
+                    >
+                      Notify Me
+                    </button>
+                  </div>
+                </div>
+
+              </section>
+            </div>
+          )}
+
+          </div>
       </main>
 
       {/* Submission Modal */}
