@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useParams, useRouter } from 'next/navigation'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useDisconnect } from 'wagmi'
 import { Address } from 'viem'
 import { cn } from '@/lib/utils'
 import { VERIWORK_ADDRESS, VERIWORK_ABI } from '@/lib/contracts'
@@ -65,6 +65,15 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false)
   const [animated, setAnimated] = useState(false)
   const [claimingTaskId, setClaimingTaskId] = useState<string | null>(null)
+  const [submissionModal, setSubmissionModal] = useState<{
+    open: boolean
+    taskId: string
+    taskTitle: string
+  } | null>(null)
+  const [submissionForm, setSubmissionForm] = useState({
+    description: '',
+    link: '',
+  })
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ringRef = useRef<SVGCircleElement>(null)
@@ -108,10 +117,36 @@ const profile = profileRaw as WorkerProfile | undefined
   } as any)
 
   // Claim task contract hook
-  const { writeContract: claimTaskContract, data: claimHash, isPending: claimPending } = useWriteContract()
+  const { writeContract: claimTaskContract, data: claimHash, isPending: claimPending, error: claimError } = useWriteContract()
   const { isSuccess: claimSuccess } = useWaitForTransactionReceipt({
     hash: claimHash,
   })
+
+  // Submit task contract hook
+  const { writeContract: submitTaskContract, data: submitHash, isPending: submitPending } = useWriteContract()
+  const { isSuccess: submitSuccess } = useWaitForTransactionReceipt({
+    hash: submitHash,
+  })
+
+  // Endorsement hooks
+  const { writeContract: endorseWorkerContract, data: endorseHash, isPending: endorsePending } = useWriteContract()
+  const { isSuccess: endorseSuccess } = useWaitForTransactionReceipt({
+    hash: endorseHash,
+  })
+
+  // Disconnect hook
+  const { disconnect } = useDisconnect()
+  const router = useRouter()
+
+  // Log claim status changes
+  useEffect(() => {
+    console.log('Claim status:', { claimHash, claimPending, claimSuccess, claimError })
+  }, [claimHash, claimPending, claimSuccess, claimError])
+
+  // Log submit status changes
+  useEffect(() => {
+    console.log('Submit status:', { submitHash, submitPending, submitSuccess })
+  }, [submitHash, submitPending, submitSuccess])
 
   const stats = profile ? {
     pocScore: Number(profile.pocScore),
@@ -144,6 +179,40 @@ const profile = profileRaw as WorkerProfile | undefined
       setClaimingTaskId(null)
     }
   }, [claimSuccess, showToast, refetchAvailableTasks, refetchActiveTasks])
+
+  // Handle claim errors
+  useEffect(() => {
+    if (claimError) {
+      const msg = claimError.message || ''
+      if (msg.includes('Org cannot claim own task') || 
+          msg.includes('cannot claim')) {
+        showToast('You cannot claim a task you posted')
+      } else if (msg.includes('Task is not open')) {
+        showToast('This task is no longer available')
+      } else {
+        showToast('Failed to claim task. Try again.')
+      }
+      setClaimingTaskId(null)
+    }
+  }, [claimError])
+
+  // Handle successful submit
+  useEffect(() => {
+    if (submitSuccess) {
+      showToast('Work submitted! Waiting for org approval.')
+      setSubmissionModal(null)
+      setSubmissionForm({ description: '', link: '' })
+      refetchActiveTasks()
+    }
+  }, [submitSuccess, showToast, refetchActiveTasks])
+
+  // Handle successful endorsement
+  useEffect(() => {
+    if (endorseSuccess) {
+      showToast('Endorsed! +5 POC added to their score.')
+      refetchProfile()
+    }
+  }, [endorseSuccess, showToast, refetchProfile])
 
   const getTabTitle = () => {
     switch (activeTab) {
@@ -291,17 +360,55 @@ const profile = profileRaw as WorkerProfile | undefined
   }
 
   const handleClaim = (taskId: string) => {
+    console.log('Claiming task:', taskId)
+    console.log('claimTaskContract function:', claimTaskContract)
+    console.log('VERIWORK_ADDRESS:', VERIWORK_ADDRESS)
+    console.log('Connected address:', connectedAddress)
+    console.log('Is connected:', !!connectedAddress)
+    console.log('Profile address:', address)
+    console.log('Is own profile:', isOwnProfile)
+    
     setClaimingTaskId(taskId)
-    claimTaskContract({
+    try {
+      claimTaskContract({
+        address: VERIWORK_ADDRESS,
+        abi: VERIWORK_ABI,
+        functionName: 'claimTask',
+        args: [BigInt(taskId)],
+      })
+    } catch (err) {
+      console.error('claimTaskContract threw:', err)
+      showToast('Failed to send transaction')
+      setClaimingTaskId(null)
+    }
+  }
+
+  const handleSubmit = () => {
+    if (!submissionModal) return
+    if (!submissionForm.link) {
+      showToast('Please provide a submission link')
+      return
+    }
+    const uri = submissionForm.link
+    submitTaskContract({
       address: VERIWORK_ADDRESS,
       abi: VERIWORK_ABI,
-      functionName: 'claimTask',
-      args: [BigInt(taskId)],
+      functionName: 'submitTask',
+      args: [BigInt(submissionModal.taskId), uri],
     })
   }
 
-  const handleSubmitWork = () => {
-    showToast('Work submitted! Waiting for org approval.')
+  const handleEndorse = () => {
+    if (!connectedAddress) {
+      showToast('Please connect your wallet first')
+      return
+    }
+    endorseWorkerContract({
+      address: VERIWORK_ADDRESS,
+      abi: VERIWORK_ABI,
+      functionName: 'endorseWorker',
+      args: [address as `0x${string}`],
+    })
   }
 
   const truncated = address
@@ -536,7 +643,10 @@ const profile = profileRaw as WorkerProfile | undefined
                           ${(Number(task.reward) / 1_000_000).toFixed(2)}
                         </div>
                         <button
-                          onClick={() => handleClaim(task.id)}
+                          onClick={() => {
+                            console.log('Claim button clicked, task.id:', task.id)
+                            handleClaim(task.id)
+                          }}
                           disabled={claimingTaskId === task.id.toString()}
                           className="bg-veri-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-lime hover:text-veri-black transition-all disabled:opacity-50 cursor-none"
                         >
@@ -580,7 +690,11 @@ const profile = profileRaw as WorkerProfile | undefined
                           </div>
                         </div>
                         <button
-                          onClick={handleSubmitWork}
+                          onClick={() => setSubmissionModal({
+                            open: true,
+                            taskId: task.id.toString(),
+                            taskTitle: task.title,
+                          })}
                           className="bg-lime text-veri-black px-4 py-2 rounded-full text-sm font-medium hover:bg-lime-dark transition-all cursor-none"
                         >
                           Submit Work
@@ -760,6 +874,72 @@ const profile = profileRaw as WorkerProfile | undefined
 
         </div>
       </main>
+
+      {/* Submission Modal */}
+      {submissionModal?.open && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+            
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-display font-bold text-xl">
+                  Submit Work
+                </h2>
+                <p className="font-light-poppins text-sm text-veri-gray mt-1">
+                  {submissionModal.taskTitle}
+                </p>
+              </div>
+              <button
+                onClick={() => setSubmissionModal(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-none"
+              >
+                <span className="text-gray-600">×</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="font-light-poppins text-sm text-veri-gray mb-2 block">
+                  Submission Link * 
+                  (GitHub, Google Drive, Figma, etc.)
+                </label>
+                <input
+                  type="url"
+                  value={submissionForm.link}
+                  onChange={(e) => setSubmissionForm(
+                    prev => ({ ...prev, link: e.target.value })
+                  )}
+                  placeholder="https://..."
+                  className="w-full border-[1.5px] border-veri-border rounded-2xl px-4 py-3 font-body focus:outline-none focus:border-lime transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="font-light-poppins text-sm text-veri-gray mb-2 block">
+                  Notes for the org (optional)
+                </label>
+                <textarea
+                  value={submissionForm.description}
+                  onChange={(e) => setSubmissionForm(
+                    prev => ({ ...prev, description: e.target.value })
+                  )}
+                  placeholder="Describe what you did..."
+                  rows={3}
+                  className="w-full border-[1.5px] border-veri-border rounded-2xl px-4 py-3 font-body focus:outline-none focus:border-lime transition-colors resize-none"
+                />
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitPending}
+                className="w-full bg-veri-black text-white rounded-full py-4 font-body font-medium hover:bg-lime hover:text-veri-black transition-all disabled:opacity-50 cursor-none"
+              >
+                {submitPending ? 'Submitting...' : 'Submit Work →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

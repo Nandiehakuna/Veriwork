@@ -179,7 +179,7 @@ useEffect(() => {
 
   useEffect(() => {
     if (rejectSubmissionSuccess) {
-      showToast('Submission rejected.')
+      showToast('Submission rejected. Task reopened.')
       refetchOrgTasks()
     }
   }, [rejectSubmissionSuccess, showToast, refetchOrgTasks])
@@ -246,7 +246,7 @@ useEffect(() => {
     } as any)
   }
 
-  const handleApprove = (submission: Submission) => {
+  const handleApprove = (task: any) => {
     if (!isConnected) {
       showToast('Please connect your wallet first')
       return
@@ -255,13 +255,13 @@ useEffect(() => {
       address: VERIWORK_ADDRESS,
       abi: VERIWORK_ABI,
       functionName: 'approveSubmission',
-      args: [BigInt(submission.taskId), submission.worker as `0x${string}`],
-    } as any)
-    setSubmissions((prev: any) => prev.filter((s: any) => s.id !== submission.id))
-    showToast('Submission approved! USDC released.')
+      args: [BigInt(task.id)],
+    })
+    setSubmissions((prev: any) => prev.filter((s: any) => s.id !== task.id))
+    showToast('Submission approved! USDC released to worker.')
   }
 
-  const handleReject = (submission: Submission) => {
+  const handleReject = (task: any) => {
     if (!isConnected) {
       showToast('Please connect your wallet first')
       return
@@ -270,10 +270,10 @@ useEffect(() => {
       address: VERIWORK_ADDRESS,
       abi: VERIWORK_ABI,
       functionName: 'rejectSubmission',
-      args: [BigInt(submission.taskId), submission.worker as `0x${string}`],
-    } as any)
-    setSubmissions((prev: any) => prev.filter((s: any) => s.id !== submission.id))
-    showToast('Submission rejected.')
+      args: [BigInt(task.id)],
+    })
+    setSubmissions((prev: any) => prev.filter((s: any) => s.id !== task.id))
+    showToast('Submission rejected. Task reopened.')
   }
 
   const getTabTitle = () => {
@@ -700,16 +700,21 @@ if (!isConnected) return null
                     {pendingSubmissions.map((sub: any) => (
                       <div key={sub.id} className="border border-veri-border rounded-2xl p-6">
                         <div className="flex items-start justify-between mb-4">
-                          <div>
+                          <div className="flex-1">
                             <div className="font-display font-bold text-lg mb-1">
                               {sub.taskTitle}
                             </div>
                             <div className="font-light-poppins text-sm text-veri-gray">
                               Worker: {sub.worker.slice(0, 6)}...{sub.worker.slice(-4)}
                             </div>
+                            <div className="font-light-poppins text-xs text-veri-gray">
+                              {sub.submittedAt}
+                            </div>
                           </div>
-                          <div className="font-light-poppins text-xs text-veri-gray">
-                            {sub.submittedAt}
+                          <div className="text-right">
+                            <div className="font-display font-bold text-lime text-lg mb-2">
+                              ${(Number(sub.reward) / 1_000_000).toFixed(2)}
+                            </div>
                           </div>
                         </div>
                         {sub.submissionLink && (
